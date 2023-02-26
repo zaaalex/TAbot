@@ -18,9 +18,16 @@ class Config
 
 	private static function setConfig(): void
 	{
-		if (!isset(self::$config))
+		if (empty(self::$config))
 		{
-			self::$config = array_merge(self::$options, LocalConfig::getLocalOptions());
+			if (file_exists(__DIR__."/LocalConfig.php"))
+			{
+				self::$config = array_merge(self::$options, LocalConfig::getLocalOptions());
+			}
+			else
+			{
+				self::$config = self::$options;
+			}
 		}
 	}
 
