@@ -2,6 +2,9 @@
 
 namespace App\src\config;
 
+/*
+ * Для использования переименовать файл в LocalConfig.php
+ */
 class LocalConfig extends Config
 {
 	private static function setLocalOptions(): void
