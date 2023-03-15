@@ -1,10 +1,10 @@
 <?php
 
-namespace App\src\Service;
+namespace App\src\service;
 
 use App\src\config\Config;
 
-class TemplateService
+class NetworkService
 {
 	public static function setWebHook(): void
 	{

@@ -1,10 +1,13 @@
 <?php
 
-namespace App\src\config;
+namespace App\install;
 
 /*
  * Для использования переименовать файл и название класса в LocalConfig
  */
+
+use App\src\config\Config;
+
 class LocalConfigSample extends Config
 {
 	private static function setLocalOptions(): void
