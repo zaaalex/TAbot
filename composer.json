@@ -10,5 +10,7 @@
             "email": "alexzorko@yandex.ru"
         }
     ],
-    "require": {}
+    "require": {
+		"ext-mysqli": "*"
+	}
 }

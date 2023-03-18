@@ -2,6 +2,8 @@
 
 namespace App\src;
 
+use App\src\config\Config;
+use App\src\database\UserInfoDAO;
 use App\src\service\MessageService;
 use JsonException;
 
@@ -10,54 +12,76 @@ class Router
 	/**
 	 * @throws JsonException
 	 */
-	public static function searchCommandRoute($data): void
+	public static function searchCommandRoute(
+		array $data,
+		bool $checkLastAction = false
+	): void
 	{
-		if (!isset($data["message"]["from"]["id"]))
-		{
-			throw new \InvalidArgumentException("Не удается получить id диалога.");
-		}
+		$messageService = new MessageService();
+		$userInfoDAO= new UserInfoDAO();
 
-		$chatId = $data["message"]["from"]["id"];
-		switch ($data["message"]["text"])
+		$userId = $data["message"]["from"]["id"];
+		$userInput = ($checkLastAction) ? $userInfoDAO->getLastAction($userId) : $data["message"]["text"];
+
+		switch ($userInput)
 		{
-			case "/menu":
+			case Config::getConfig()["USER_ACTION_MENU"]:
 			{
-				MessageService::sendMenu($chatId);
+				if ($checkLastAction)
+				{
+					//MenuController();
+					break;
+				}
+				$userInfoDAO->updateUserInfoById($userId, Config::getConfig()["USER_ACTION_MENU"]);
+				$messageService->sendMenu($userId);
 				break;
 			}
 			case "🖨️ Поиск по модели":
-			case "/product":
+			case Config::getConfig()["USER_ACTION_PRODUCT"]:
 			{
-				MessageService::searchByProductModel($chatId);
+				if ($checkLastAction)
+				{
+					//ProductController();
+					break;
+				}
+				$userInfoDAO->updateUserInfoById($userId, Config::getConfig()["USER_ACTION_PRODUCT"]);
+				$messageService->sendSearchByProductModelMessage($userId);
 				break;
 			}
 			case "📟 Поиск по ошибке":
-			case "/code":
+			case Config::getConfig()["USER_ACTION_CODE"]:
 			{
-				MessageService::searchByErrorCode($chatId);
+				if ($checkLastAction)
+				{
+					//CodeController();
+					break;
+				}
+				$userInfoDAO->updateUserInfoById($userId, Config::getConfig()["USER_ACTION_CODE"]);
+				$messageService->sendSearchByErrorCodeMessage($userId);
 				break;
 			}
 			case "🌍 Язык":
 			case "/start":
-			case "/language":
+			case Config::getConfig()["USER_ACTION_LANGUAGE"]:
 			{
-				MessageService::chooseLanguage($chatId);
+				if ($checkLastAction)
+				{
+					//LanguageController();
+					break;
+				}
+				$userInfoDAO->updateUserInfoById($userId, Config::getConfig()["USER_ACTION_LANGUAGE"]);
+				$messageService->sendChooseLanguageMessage($userId);
 				break;
 			}
 			default:
-				MessageService::sendTextMessage(
-					$chatId,
-					"Не получилось распознать команду. Попробуйте ещё раз или воспользуйтесь меню ниже ⬇"
-				);
-				MessageService::sendMenu($chatId);
+			{
+				if ($checkLastAction)
+				{
+					$messageService->sendError($userId);
+					break;
+				}
+				self::searchCommandRoute($data, true);
+			}
 		}
-	}
-
-	/**
-	 * @throws JsonException
-	 */
-	public static function checkingForCommand($data): void
-	{
-		self::searchCommandRoute($data);
 	}
 }

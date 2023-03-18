@@ -11,9 +11,19 @@ class Config
 		"TOKEN" => "",
 		"ADMIN_CHAT_ID" => "",
 		"WEBHOOK_URL" => "",
+
+		"DB_HOST" => "",
+		"DB_USER" => "",
+		"DB_PASSWORD" => "",
+		"DB_NAME" => "",
+
 		"LOG_OPTION_SEND" => "send",
 		"LOG_OPTION_RECEIVED" => "received",
-		"ROOT" => __DIR__ . "../",
+
+		"USER_ACTION_MENU"=>"/menu",
+		"USER_ACTION_LANGUAGE"=>"/language",
+		"USER_ACTION_PRODUCT"=>"/product",
+		"USER_ACTION_CODE"=>"/code",
 
 		"WHITE_LOG_REQUEST" => false,
 	];

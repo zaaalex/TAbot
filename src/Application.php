@@ -6,7 +6,9 @@ use App\src\config\Config;
 use App\src\logging\Logger;
 use App\src\service\MessageService;
 use App\src\service\NetworkService;
+use App\src\service\Validator;
 use Exception;
+use InvalidArgumentException;
 use JsonException;
 
 class Application
@@ -20,14 +22,18 @@ class Application
 			if ($_SERVER['REQUEST_METHOD'] === 'POST')
 			{
 				$data = self::getData();
-				Logger::whiteLog($data, Config::getConfig()["LOG_OPTION_RECEIVED"]);
 
-				Router::checkingForCommand($data);
+				Router::searchCommandRoute($data);
 			}
+		}
+		catch(InvalidArgumentException $e)
+		{
+			(new MessageService())->sendError((int)$e->getCode());
+			(new MessageService())->sendTextMessage(Config::getConfig()["ADMIN_CHAT_ID"], "[ERROR] " . $e);
 		}
 		catch (Exception $e)
 		{
-			MessageService::sendTextMessage(Config::getConfig()["ADMIN_CHAT_ID"], "[ERROR] " . $e);
+			(new MessageService())->sendTextMessage(Config::getConfig()["ADMIN_CHAT_ID"], "[ERROR] " . $e);
 		}
 	}
 
@@ -37,7 +43,8 @@ class Application
 	private static function getData(): array
 	{
 		$data = file_get_contents('php://input');
+		Logger::whiteLog($data, Config::getConfig()["LOG_OPTION_RECEIVED"]);
 
-		return json_decode($data, true, 512, JSON_THROW_ON_ERROR);
+		return Validator::validateReceivedMessage($data);
 	}
 }

@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS language
 (
 	ID int not null auto_increment,
-	NAME varchar(500) not null,
+	NAME varchar(10) not null,
 	PRIMARY KEY (ID),
 	UNIQUE(NAME)
 );
@@ -14,11 +14,11 @@ CREATE TABLE IF NOT EXISTS errorType
 	UNIQUE(NAME)
 );
 
-CREATE TABLE IF NOT EXISTS userAction
+CREATE TABLE IF NOT EXISTS userInfo
 (
 	ID varchar(500) not null,
 	LAST_ACTION varchar(500),
-	LANGUAGE_NAME varchar(500),
+	LANGUAGE_NAME varchar(10),
 	PRIMARY KEY (ID),
 	FOREIGN KEY FK_LANGUAGE (LANGUAGE_NAME)
 		REFERENCES language(NAME)
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS errorCondition
 	ID int not null auto_increment,
 	ERROR_ID int not null,
 	DESCRIPTION varchar(500) not null,
-	LANGUAGE_NAME varchar(500) not null,
+	LANGUAGE_NAME varchar(10) not null,
 	PRIMARY KEY (ID),
 	FOREIGN KEY FK_ERROR_ID (ERROR_ID)
 		REFERENCES error(ID)
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS errorDescription
 	ERROR_ID int not null,
 	NAME varchar(500) not null,
 	DESCRIPTION varchar(500) not null,
-	LANGUAGE_NAME varchar(500) not null,
+	LANGUAGE_NAME varchar(10) not null,
 	PRIMARY KEY (ID),
 	FOREIGN KEY FK_ERROR_ID (ERROR_ID)
 		REFERENCES error(ID)
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS errorDescription
 CREATE TABLE IF NOT EXISTS solve
 (
 	ID int not null auto_increment,
-	LANGUAGE_NAME varchar(500) not null,
+	LANGUAGE_NAME varchar(10) not null,
 	STEP int not null,
 	DESCRIPTION varchar(500) not null,
 	ASSUMED_CASE varchar(500) not null,
