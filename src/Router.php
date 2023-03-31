@@ -4,7 +4,12 @@ namespace App\src;
 
 use App\src\config\Config;
 use App\src\database\UserInfoDAO;
-use App\src\service\MessageService;
+use App\src\service\message\action\LanguageMessageService;
+use App\src\service\message\action\MenuMessageService;
+use App\src\service\message\action\SearchByCodeMessageService;
+use App\src\service\message\action\SearchByModelMessageService;
+use App\src\service\message\SendError;
+use App\src\userAction\LanguageController;
 use JsonException;
 
 class Router
@@ -17,25 +22,26 @@ class Router
 		bool $checkLastAction = false
 	): void
 	{
-		$messageService = new MessageService();
 		$userInfoDAO= new UserInfoDAO();
 
 		$userId = $data["message"]["from"]["id"];
-		$userInput = ($checkLastAction) ? $userInfoDAO->getLastAction($userId) : $data["message"]["text"];
+		$userInput = ($checkLastAction) ? $userInfoDAO->getLastActionById($userId) : $data["message"]["text"];
+
+		$interfaceLanguage = (new UserInfoDAO())->getLanguageById($userId);
+		if (is_null($interfaceLanguage))
+		{
+			$interfaceLanguage= Config::getConfig()["DEFAULT_LANGUAGE"];
+		}
 
 		switch ($userInput)
 		{
 			case Config::getConfig()["USER_ACTION_MENU"]:
 			{
-				if ($checkLastAction)
-				{
-					//MenuController();
-					break;
-				}
-				$userInfoDAO->updateUserInfoById($userId, Config::getConfig()["USER_ACTION_MENU"]);
-				$messageService->sendMenu($userId);
+				(new UserInfoDAO())->updateUserInfoById($userId, null);
+				(new MenuMessageService($interfaceLanguage, $userId))->sendMenu();
 				break;
 			}
+			case "🖨️ Search by model":
 			case "🖨️ Поиск по модели":
 			case Config::getConfig()["USER_ACTION_PRODUCT"]:
 			{
@@ -45,9 +51,10 @@ class Router
 					break;
 				}
 				$userInfoDAO->updateUserInfoById($userId, Config::getConfig()["USER_ACTION_PRODUCT"]);
-				$messageService->sendSearchByProductModelMessage($userId);
+				(new SearchByModelMessageService($interfaceLanguage, $userId))->sendMessage();
 				break;
 			}
+			case "📟 Search by error":
 			case "📟 Поиск по ошибке":
 			case Config::getConfig()["USER_ACTION_CODE"]:
 			{
@@ -57,30 +64,31 @@ class Router
 					break;
 				}
 				$userInfoDAO->updateUserInfoById($userId, Config::getConfig()["USER_ACTION_CODE"]);
-				$messageService->sendSearchByErrorCodeMessage($userId);
+				(new SearchByCodeMessageService($interfaceLanguage, $userId))->sendMessage();
 				break;
 			}
+			case "🌍 Language":
 			case "🌍 Язык":
 			case "/start":
 			case Config::getConfig()["USER_ACTION_LANGUAGE"]:
 			{
 				if ($checkLastAction)
 				{
-					//LanguageController();
+					LanguageController::setLanguage($data);
 					break;
 				}
 				$userInfoDAO->updateUserInfoById($userId, Config::getConfig()["USER_ACTION_LANGUAGE"]);
-				$messageService->sendChooseLanguageMessage($userId);
+				(new LanguageMessageService($interfaceLanguage, $userId))->sendChooseLanguageMessage();
 				break;
 			}
 			default:
 			{
-				if ($checkLastAction)
+				if (!$checkLastAction&&!is_null($userInfoDAO->getLastActionById($userId)))
 				{
-					$messageService->sendError($userId);
+					self::searchCommandRoute($data, true);
 					break;
 				}
-				self::searchCommandRoute($data, true);
+				(new SendError($interfaceLanguage, $userId))->sendError();
 			}
 		}
 	}

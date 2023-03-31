@@ -25,6 +25,13 @@ class Config
 		"USER_ACTION_PRODUCT"=>"/product",
 		"USER_ACTION_CODE"=>"/code",
 
+		"DEFAULT_LANGUAGE"=>"ru",
+		"USER_LANGUAGE_ENGLISH"=>"en",
+		"USER_LANGUAGE_RUSSIAN"=>"ru",
+
+		"USER_MESSAGE_LANGUAGE_ENGLISH"=>"🇬🇧 English",
+		"USER_MESSAGE_LANGUAGE_RUSSIAN"=>"🇷🇺 Русский",
+
 		"WHITE_LOG_REQUEST" => false,
 	];
 

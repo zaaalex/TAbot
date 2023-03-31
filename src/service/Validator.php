@@ -3,17 +3,12 @@
 namespace App\src\service;
 
 use InvalidArgumentException;
-use JsonException;
 use LogicException;
 
 class Validator
 {
-	/**
-	 * @throws JsonException
-	 */
-	public static function validateReceivedMessage(string $data):array
+	public static function validateReceivedMessage(array $data):array
 	{
-		$data = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
 		if (!isset($data["message"]["from"]["id"], $data["message"]["chat"]["id"], $data["message"]["text"]))
 		{
 			throw new LogicException("Не удается получить доступ к полю входящего сообщения");
@@ -29,7 +24,7 @@ class Validator
 		return $data;
 	}
 
-	public static function validateString(string $data):string
+	public static function validateString(?string $data):string
 	{
 		return htmlspecialchars($data, ENT_QUOTES);
 	}
