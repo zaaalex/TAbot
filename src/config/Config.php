@@ -9,7 +9,6 @@ class Config
 	 */
 	private static array $options = [
 		"TOKEN" => "",
-		"ADMIN_CHAT_ID" => "",
 		"WEBHOOK_URL" => "",
 
 		"DB_HOST" => "",
@@ -32,7 +31,9 @@ class Config
 		"USER_MESSAGE_LANGUAGE_ENGLISH"=>"🇬🇧 English",
 		"USER_MESSAGE_LANGUAGE_RUSSIAN"=>"🇷🇺 Русский",
 
-		"WHITE_LOG_REQUEST" => false,
+		"ERROR_JAM"=>"jam",
+
+		"WRITE_LOG_REQUEST" => false,
 	];
 
 	public static function getConfig(): array

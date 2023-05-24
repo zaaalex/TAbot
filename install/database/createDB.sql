@@ -139,6 +139,3 @@ CREATE TABLE IF NOT EXISTS error_solve
 		ON UPDATE CASCADE
 		ON DELETE CASCADE
 );
-
-INSERT INTO tabot.language (NAME) VALUES ('en');
-INSERT INTO tabot.language (NAME) VALUES ('ru');

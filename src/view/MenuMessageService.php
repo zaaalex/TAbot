@@ -1,34 +1,51 @@
 <?php
 
-namespace App\src\service\message\action;
+namespace App\src\view;
 
 use App\src\config\Config;
-use App\src\service\message\MessageService;
 use JsonException;
 
 class MenuMessageService extends MessageService
 {
-
-	public function __construct(string $languageCode, int $userId, string $text ="")
+	public function __construct(int $userId, string $languageCode="", string $text ="", array $keyboard=[])
 	{
 		parent::__construct($userId);
-		switch ($languageCode)
+
+		if (!empty($keyboard))
 		{
-			case Config::getConfig()["USER_LANGUAGE_RUSSIAN"]:
+			$customKeyboard = [
+				"keyboard" => [
+					$keyboard
+				],
+				"resize_keyboard" => true,
+			];
+
+			$this->currentKeyboard = $customKeyboard;
+			$this->currentMessageEntity = [];
+			$this->currentText = $text;
+
+		}
+		else
+		{
+			switch ($languageCode)
 			{
-				$this->currentKeyboard = self::$keyboardRu;
-				$this->currentMessageEntity = empty($text) ? $this->messageEntityRu: array(null);
-				$this->currentText = empty($text) ? $this->textRu: $text;
-				break;
+				case Config::getConfig()["USER_LANGUAGE_RUSSIAN"]:
+				{
+					$this->currentKeyboard = self::$keyboardRu;
+					$this->currentMessageEntity = empty($text) ? $this->messageEntityRu : [];
+					$this->currentText = empty($text) ? $this->textRu : $text;
+					break;
+				}
+				case Config::getConfig()["USER_LANGUAGE_ENGLISH"]:
+				{
+					$this->currentKeyboard = self::$keyboardEn;
+					$this->currentMessageEntity = empty($text) ? $this->messageEntityEn : [];
+					$this->currentText = empty($text) ? $this->textEn : $text;
+					break;
+				}
+				default:
+					throw new \LogicException("Передан некорректный languageCode: $languageCode");
 			}
-			case Config::getConfig()["USER_LANGUAGE_ENGLISH"]:
-			{
-				$this->currentKeyboard = self::$keyboardEn;
-				$this->currentMessageEntity = empty($text) ? $this->messageEntityEn: array(null);
-				$this->currentText = empty($text) ? $this->textEn: $text;
-				break;
-			}
-			default: throw new \LogicException("Передан некорректный languageCode: $languageCode");
 		}
 	}
 
@@ -124,7 +141,7 @@ class MenuMessageService extends MessageService
 			. json_encode($this->currentKeyboard, JSON_THROW_ON_ERROR);
 
 
-		if (empty($this->currentMessageEntity))
+		if (isset($this->currentMessageEntity))
 		{
 			$urlQuery.= "&entities="
 				. json_encode($this->currentMessageEntity, JSON_THROW_ON_ERROR);

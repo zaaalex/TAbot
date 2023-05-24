@@ -1,6 +1,6 @@
 <?php
 
-namespace App\src\logging;
+namespace App\src\service;
 
 use App\src\config\Config;
 use JsonException;

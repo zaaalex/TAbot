@@ -1,10 +1,9 @@
 <?php
 
-namespace App\src\service\message;
+namespace App\src\view;
 
 use App\src\config\Config;
-use App\src\database\UserInfoDAO;
-use App\src\logging\Logger;
+use App\src\service\Logger;
 use JsonException;
 
 class MessageService
@@ -17,10 +16,6 @@ class MessageService
 
 	protected string $token;
 	protected int $userId;
-
-
-
-
 
 	/**
 	 * @throws JsonException
@@ -52,6 +47,9 @@ class MessageService
 	{
 		$result = file_get_contents($urlQuery);
 
-		Logger::whiteLog($result, Config::getConfig()["LOG_OPTION_SEND"]);
+		if (Config::getConfig()['WRITE_LOG_REQUEST'])
+		{
+			Logger::whiteLog($result, Config::getConfig()["LOG_OPTION_SEND"]);
+		}
 	}
 }

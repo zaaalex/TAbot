@@ -3,93 +3,121 @@
 namespace App\src;
 
 use App\src\config\Config;
+use App\src\controller\LanguageController;
+use App\src\controller\SearchByErrorController;
+use App\src\controller\SearchByProductController;
 use App\src\database\UserInfoDAO;
-use App\src\service\message\action\LanguageMessageService;
-use App\src\service\message\action\MenuMessageService;
-use App\src\service\message\action\SearchByCodeMessageService;
-use App\src\service\message\action\SearchByModelMessageService;
-use App\src\service\message\SendError;
-use App\src\userAction\LanguageController;
-use JsonException;
+use App\src\languagePhrases\PhrasesController;
+use App\src\model\ActionInfo;
+use App\src\view\LanguageMessageService;
+use App\src\view\MenuMessageService;
+use App\src\view\MessageService;
 
 class Router
 {
-	/**
-	 * @throws JsonException
-	 */
-	public static function searchCommandRoute(
-		array $data,
-		bool $checkLastAction = false
-	): void
+	public static function searchCommandRoute(array $data, bool $checkLastAction = false): void
 	{
-		$userInfoDAO= new UserInfoDAO();
+		$userInfoDAO = new UserInfoDAO();
 
 		$userId = $data["message"]["from"]["id"];
-		$userInput = ($checkLastAction) ? $userInfoDAO->getLastActionById($userId) : $data["message"]["text"];
+		$action = ($checkLastAction) ? $userInfoDAO->getActionInfoById($userId)->lastAction
+			: $data["message"]["text"];
 
-		$interfaceLanguage = (new UserInfoDAO())->getLanguageById($userId);
-		if (is_null($interfaceLanguage))
+		$interfaceLanguage = $userInfoDAO->getLanguageById($userId) ??
+			Config::getConfig()["DEFAULT_LANGUAGE"];
+
+		$phrasesController = new PhrasesController($interfaceLanguage);
+		try
 		{
-			$interfaceLanguage= Config::getConfig()["DEFAULT_LANGUAGE"];
+			switch ($action)
+			{
+				case Config::getConfig()["USER_ACTION_MENU"]:
+				{
+					$userInfoDAO->updateUserInfoById($userId, new ActionInfo(null));
+					(new MenuMessageService($userId, $interfaceLanguage))->sendMenu();
+					break;
+				}
+				case "🖨️ Search by model":
+				case "🖨️ Поиск по модели":
+				case Config::getConfig()["USER_ACTION_PRODUCT"]:
+				{
+					if ($checkLastAction)
+					{
+						SearchByProductController::determineState($data);
+						break;
+					}
+
+					$userInfoDAO->updateUserInfoById(
+						$userId,
+						new ActionInfo(Config::getConfig()["USER_ACTION_PRODUCT"])
+					);
+
+					(new MessageService($userId))
+						->sendTextMessage($phrasesController->getPhrase('SEARCH_BY_MODEL_MESSAGE'));
+
+					break;
+				}
+				case "📟 Search by error":
+				case "📟 Поиск по ошибке":
+				case Config::getConfig()["USER_ACTION_CODE"]:
+				{
+					if ($checkLastAction)
+					{
+						SearchByErrorController::determineState($data);
+						break;
+					}
+
+					$userInfoDAO->updateUserInfoById(
+						$userId,
+						new ActionInfo(Config::getConfig()["USER_ACTION_CODE"])
+					);
+
+					(new MessageService($userId))
+						->sendTextMessage($phrasesController->getPhrase('SEARCH_BY_CODE_MESSAGE'));
+					break;
+				}
+				case "🌍 Language":
+				case "🌍 Язык":
+				case "/start":
+				case Config::getConfig()["USER_ACTION_LANGUAGE"]:
+				{
+					if ($checkLastAction)
+					{
+						LanguageController::setLanguage($data);
+						break;
+					}
+
+					$userInfoDAO->updateUserInfoById(
+						$userId,
+						new ActionInfo(Config::getConfig()["USER_ACTION_LANGUAGE"])
+					);
+
+					(new LanguageMessageService($interfaceLanguage, $userId))->sendLanguageMessage();
+					break;
+				}
+				default:
+				{
+					$lastAction = $userInfoDAO->getActionInfoById($userId)->lastAction;
+					if (!$checkLastAction && !is_null($lastAction))
+					{
+						self::searchCommandRoute($data, true);
+						break;
+					}
+					throw new \InvalidArgumentException("Incorrect command");
+				}
+			}
 		}
-
-		switch ($userInput)
+		catch (\Exception $e)
 		{
-			case Config::getConfig()["USER_ACTION_MENU"]:
-			{
-				(new UserInfoDAO())->updateUserInfoById($userId, null);
-				(new MenuMessageService($interfaceLanguage, $userId))->sendMenu();
-				break;
-			}
-			case "🖨️ Search by model":
-			case "🖨️ Поиск по модели":
-			case Config::getConfig()["USER_ACTION_PRODUCT"]:
-			{
-				if ($checkLastAction)
-				{
-					//ProductController();
-					break;
-				}
-				$userInfoDAO->updateUserInfoById($userId, Config::getConfig()["USER_ACTION_PRODUCT"]);
-				(new SearchByModelMessageService($interfaceLanguage, $userId))->sendMessage();
-				break;
-			}
-			case "📟 Search by error":
-			case "📟 Поиск по ошибке":
-			case Config::getConfig()["USER_ACTION_CODE"]:
-			{
-				if ($checkLastAction)
-				{
-					//CodeController();
-					break;
-				}
-				$userInfoDAO->updateUserInfoById($userId, Config::getConfig()["USER_ACTION_CODE"]);
-				(new SearchByCodeMessageService($interfaceLanguage, $userId))->sendMessage();
-				break;
-			}
-			case "🌍 Language":
-			case "🌍 Язык":
-			case "/start":
-			case Config::getConfig()["USER_ACTION_LANGUAGE"]:
-			{
-				if ($checkLastAction)
-				{
-					LanguageController::setLanguage($data);
-					break;
-				}
-				$userInfoDAO->updateUserInfoById($userId, Config::getConfig()["USER_ACTION_LANGUAGE"]);
-				(new LanguageMessageService($interfaceLanguage, $userId))->sendChooseLanguageMessage();
-				break;
-			}
-			default:
-			{
-				if (!$checkLastAction&&!is_null($userInfoDAO->getLastActionById($userId)))
-				{
-					self::searchCommandRoute($data, true);
-					break;
-				}
-				(new SendError($interfaceLanguage, $userId))->sendError();
-			}
+			$phrasesController = new PhrasesController($interfaceLanguage);
+
+			(new MenuMessageService
+				(
+					$userId,
+					$interfaceLanguage,
+					$phrasesController->getPhrase('COMMAND_NOT_RECOGNIZED')
+				)
+			)->sendMenu();
 		}
 	}
 }
