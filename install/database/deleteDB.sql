@@ -1,8 +1,5 @@
-DROP TABLE IF EXISTS condition_solve;
-DROP TABLE IF EXISTS error_solve;
 DROP TABLE IF EXISTS product_errorJam;
 DROP TABLE IF EXISTS errorCondition;
-DROP TABLE IF EXISTS errorDescription;
 DROP TABLE IF EXISTS product;
 DROP TABLE IF EXISTS solve;
 DROP TABLE IF EXISTS userInfo;

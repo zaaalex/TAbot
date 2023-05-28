@@ -60,11 +60,7 @@ class SearchByErrorController
 		int $userId
 	): void
 	{
-		$errorInfo = (new ErrorDAO())->getErrorByCode(
-			$errorCode,
-			$phrasesController->interfaceLanguage,
-			$actionInfo->productId
-		);
+		$errorInfo = (new ErrorDAO())->getErrorByCode($errorCode, $actionInfo->productId);
 		if (is_null($errorInfo))
 		{
 			$searchSuccessPhrase = $phrasesController
@@ -82,6 +78,7 @@ class SearchByErrorController
 			);
 
 			$products = (new ProductDAO())->getProductsByErrorCode($errorCode);
+			$productMessage="";
 			$keyboard = [];
 			foreach ($products as $key=>$product)
 			{
@@ -102,13 +99,6 @@ class SearchByErrorController
 			->getPhrase("ERROR_CODE_SUCCESS_SEARCH");
 
 		(new MessageService($userId))->sendTextMessage($searchSuccessPhrase);
-		(new MessageService($userId))->sendTextMessage(
-			$errorInfo['CODE']
-			.': '
-			.$errorInfo['NAME']
-			.PHP_EOL
-			.$errorInfo['DESCRIPTION']
-		);
 
 		$actionInfo->errorId=$errorInfo['ID'];
 
@@ -126,10 +116,20 @@ class SearchByErrorController
 			$phrasesController->interfaceLanguage
 		);
 
-		if (empty($conditions))
+		if (is_null($conditions))
 		{
-			$actionInfo->conditionId = -1;
-			$actionInfo->step=0;
+			throw new \InvalidArgumentException("Conditions for error with code $actionInfo->errorId not found");
+		}
+
+		if (count($conditions)===1)
+		{
+			$actionInfo->conditionId = $conditions[0]['ID'];
+			$actionInfo->step=1;
+
+			(new MessageService($userId))->sendTextMessage(
+				"[". $conditions[0]['NAME']."]: "
+				.$conditions[0]['DESCRIPTION']
+			);
 
 			(new UserInfoDAO())->updateUserInfoById($userId, $actionInfo);
 			self::checkStep($actionInfo, $phrasesController, $userId);
@@ -142,7 +142,7 @@ class SearchByErrorController
 
 		foreach ($conditions as $key=>$condition)
 		{
-			$conditionsMessage .= ($key+1).'. '.$condition['DESCRIPTION'].PHP_EOL;
+			$conditionsMessage .= ($key+1).'. '.$condition['NAME'].PHP_EOL;
 			$keyboard[] = ["text"=>$key+1];
 		}
 
@@ -172,9 +172,14 @@ class SearchByErrorController
 		}
 
 		$actionInfo->conditionId = $conditions[$conditionId-1]['ID'];
-		$actionInfo->step = 0;
+		$actionInfo->step = 1;
 
 		(new UserInfoDAO())->updateUserInfoById($userId, $actionInfo);
+
+		(new MessageService($userId))->sendTextMessage(
+			"[". $conditions[$conditionId-1]['NAME']."]: "
+			.$conditions[$conditionId-1]['DESCRIPTION']
+		);
 
 		self::checkStep($actionInfo, $phrasesController, $userId);
 	}
@@ -188,14 +193,7 @@ class SearchByErrorController
 		int $userId
 	): void
 	{
-		if ($actionInfo->conditionId!==-1)
-		{
-			$solve = (new ErrorDAO())->getSolveByConditionId($actionInfo->conditionId, $actionInfo->step, $phrasesController->interfaceLanguage);
-		}
-		else
-		{
-			$solve = (new ErrorDAO())->getSolveByErrorId($actionInfo->errorId, $actionInfo->step, $phrasesController->interfaceLanguage);
-		}
+		$solve = (new ErrorDAO())->getSolveByConditionId($actionInfo->conditionId, $actionInfo->step);
 
 		if (empty($solve))
 		{
@@ -210,13 +208,13 @@ class SearchByErrorController
 
 		(new MessageService($userId))->sendTextMessage(
 			"[". $phrasesController->getPhrase("STEP"). " "
-			.($actionInfo->step+1) ."]".PHP_EOL
+			.($actionInfo->step) ."]".PHP_EOL.PHP_EOL
 			. $phrasesController->getPhrase('DESCRIPTION').": "
-			. $solve['DESCRIPTION'].PHP_EOL
+			. $solve['DESCRIPTION'].PHP_EOL.PHP_EOL
 			. $phrasesController->getPhrase('ASSUMED_CASE').": "
-			. $solve['ASSUMED_CASE'].PHP_EOL
+			. $solve['ASSUMED_CASE'].PHP_EOL.PHP_EOL
 			. $phrasesController->getPhrase('MEASURES').": "
-			. $solve['MEASURES'].PHP_EOL
+			. $solve['MEASURES']
 		);
 
 		$keyboard = [

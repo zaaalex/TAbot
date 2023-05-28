@@ -27,7 +27,7 @@ class ErrorDAO extends DatabaseService
 		return isset($row['TYPE_NAME']) && $row['TYPE_NAME'] === Config::getConfig()['ERROR_JAM'];
 	}
 
-	public function getErrorByCode(string $code, string $interfaceLanguage, int $productId = null): ?array
+	public function getErrorByCode(string $code, int $productId = null): ?array
 	{
 		$connection = $this->getDatabaseConnection();
 		$code = mysqli_real_escape_string($connection, $code);
@@ -35,16 +35,14 @@ class ErrorDAO extends DatabaseService
 
 		if (!is_null($productId) && $this->isTypeJam($code))
 		{
-			$query = "SELECT error.ID, CODE, TYPE_NAME, NAME, DESCRIPTION FROM error
-			inner join errorDescription eD on error.ID = eD.ERROR_ID
-			inner join product_errorJam peJ on error.ID = peJ.ERROR_ID
-			WHERE CODE LIKE '$code' && eD.LANGUAGE_NAME = '$interfaceLanguage' && peJ.PRODUCT_ID='$productId'";
+			$query = "SELECT error.ID, CODE, TYPE_NAME FROM error
+					  inner join product_errorJam peJ on error.ID = peJ.ERROR_ID
+					  WHERE CODE LIKE '$code' && peJ.PRODUCT_ID='$productId'";
 		}
 		else
 		{
-			$query = "SELECT error.ID, CODE, TYPE_NAME, NAME, DESCRIPTION FROM error
-			inner join errorDescription eD on error.ID = eD.ERROR_ID
-			WHERE CODE LIKE '$code' && eD.LANGUAGE_NAME = '$interfaceLanguage'";
+			$query = "SELECT ID, CODE, TYPE_NAME FROM error 
+                      WHERE CODE LIKE '$code'";
 		}
 
 		$result = mysqli_query($connection, $query);
@@ -66,7 +64,7 @@ class ErrorDAO extends DatabaseService
 	public function getConditionsByErrorId(int $errorId, string $interfaceLanguage): ?array
 	{
 		$connection = $this->getDatabaseConnection();
-		$query = "SELECT * FROM errorCondition WHERE ERROR_ID = '$errorId' && LANGUAGE_NAME = '$interfaceLanguage'";
+		$query = "SELECT ID, NAME, DESCRIPTION FROM errorCondition WHERE ERROR_ID = '$errorId' && LANGUAGE_NAME = '$interfaceLanguage'";
 
 		$result = mysqli_query($connection, $query);
 		if (!$result)
@@ -83,28 +81,11 @@ class ErrorDAO extends DatabaseService
 		return $description;
 	}
 
-	public function getSolveByErrorId(int $errorId, int $ordinalNumber, string $interfaceLanguage): ?array
+	public function getSolveByConditionId(int $conditionId, int $ordinalNumber): ?array
 	{
 		$connection = $this->getDatabaseConnection();
-		$query = "SELECT DESCRIPTION, ASSUMED_CASE, MEASURES from error_solve
-		INNER JOIN solve s on error_solve.SOLVE_ID = s.ID
-		WHERE error_solve.ERROR_ID='$errorId' && s.STEP='$ordinalNumber'&& s.LANGUAGE_NAME='$interfaceLanguage'";
-
-		$result = mysqli_query($connection, $query);
-		if (!$result)
-		{
-			throw new RuntimeException(mysqli_errno($connection) . ': ' . mysqli_error($connection));
-		}
-
-		return mysqli_fetch_assoc($result);
-	}
-
-	public function getSolveByConditionId(int $conditionId, int $ordinalNumber, string $interfaceLanguage): ?array
-	{
-		$connection = $this->getDatabaseConnection();
-		$query = "SELECT DESCRIPTION, ASSUMED_CASE, MEASURES from condition_solve
-		INNER JOIN solve s on condition_solve.SOLVE_ID = s.ID
-		WHERE condition_solve.CONDITION_ID='$conditionId' && s.STEP='$ordinalNumber' && s.LANGUAGE_NAME='$interfaceLanguage'";
+		$query = "SELECT DESCRIPTION, ASSUMED_CASE, MEASURES from solve s
+		WHERE s.CONDITION_ID='$conditionId' && s.STEP='$ordinalNumber'";
 
 		$result = mysqli_query($connection, $query);
 		if (!$result)
